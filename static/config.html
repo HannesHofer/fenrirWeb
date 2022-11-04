@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Fenrir (c) - Configuration</title>
+        <link rel="stylesheet" href="/static/bootstrap.min.css">
+    </head>
+   <body>
+    <script src="static/script.js"></script>
+        <div id=header></div>
+        <div id=config>
+            Enter openVPN configuration (ovpn file)
+            <br>
+            <textarea id=vpnconfig name=vpnconfig rows = "25" cols = "120" name = "description" ></textarea>
+            <br>
+            Enter openVPN authentication details (username/password)
+            <br>
+            <textarea id=vpnauth name=vpnauth rows = "5" cols = "60" name = "description" >
+openvpn username
+openvpn password</textarea><br>
+            <button class="button btn btn-success btn-lg center-block" onclick="sendConfig()">Update Config</button>
+        </div>
+</body>
+</html>
