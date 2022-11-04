@@ -5,11 +5,13 @@ from json import loads, dumps
 from argparse import ArgumentParser
 from logging import debug, basicConfig, INFO, DEBUG
 from sys import stdout
-
+from fenrir.filehandler import filehandler
 
 APPPATH = dirname(realpath(__file__))
 TEMPLATE_PATH[:] = [f'{APPPATH}/views']
 DBPATH = '/var/cache/fenrir/'
+VPNCONFIG = '/storage/vpn.conf'
+VPNAUTH = '/storage/vpn.auth'
 
 app = application = Bottle()
 
@@ -147,6 +149,39 @@ def changestate():
     return dumps(jsondata)
 
 
+@app.route('/storeconfig', method=['POST'])
+@route('/storeconfig', method=['POST'])
+def storeconfig():
+    """ store config settings
+
+    return error or success messages when storing succeeds/fails
+    """
+    postdata = request.body.read()
+    jsondata = loads(postdata.decode('utf-8'))
+    response.content_type = 'text/html'
+    if 'vpnconfig' not in jsondata.keys() or 'vpnauth' not in jsondata.keys():
+        return '<div class="alert alert-danger" role="alert">unable to get needed parameters</div>'
+
+    try:
+        fh = filehandler()
+        cipherconfig = fh.encode(jsondata['vpnconfig'])
+        cipherauth = fh.encode(jsondata['vpnauth'])
+
+        open(VPNCONFIG, 'w').write(cipherconfig.decode('utf-8'))
+        open(VPNAUTH, 'w').write(cipherauth.decode('utf-8'))
+    except Exception as e:
+        return f'<div class="alert alert-danger" role="alert">unable to get store configuration: {str(e)}</div>'
+
+    return '<div class="alert alert-success" role="alert">Successfully stored config</div>'
+
+
+@app.route('/config')
+@route('/config')
+def config():
+    """ send config page to store settings """
+    return static_file('config.html', root=f'{APPPATH}/static/')
+
+
 def main() -> None:
     """ main method
 
@@ -156,8 +191,16 @@ def main() -> None:
     """
     parser = ArgumentParser()
     parser.add_argument('--debug', help='run in debug mode', action='store_true')
+    parser.add_argument('--vpnconfigfile', help='config file for vpn service (openvpn)')
+    parser.add_argument('--vpnauthfile', help='auth file (username/password) for vpnservice')
     args = parser.parse_args()
     basicConfig(stream=stdout, level=DEBUG if args.debug else INFO)
+    if args.vpnconfigfile:
+        global VPNCONFIG
+        VPNCONFIG = args.vpnconfigfile
+    if args.vpnauthfile:
+        global VPNAUTH
+        VPNAUTH = args.vpnauthfile
     run(host='0.0.0.0', port=8080, debug=args.debug)
 
 
