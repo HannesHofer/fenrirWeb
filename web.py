@@ -1,47 +1,74 @@
 from bottle import route, run, static_file, jinja2_template, TEMPLATE_PATH, Bottle, request, response
-import sqlite3
-import os
-import json
+from sqlite3 import connect, OperationalError
+from os.path import dirname, realpath
+from json import loads, dumps
+from argparse import ArgumentParser
+from logging import debug, basicConfig, INFO, DEBUG
+from sys import stdout
 
-APPPATH=os.path.dirname(os.path.realpath(__file__))
+
+APPPATH = dirname(realpath(__file__))
 TEMPLATE_PATH[:] = [f'{APPPATH}/views']
-DBPATH='/var/cache/fenrir/'
+DBPATH = '/var/cache/fenrir/'
 
 app = application = Bottle()
 
-def getdevices(dbpath=f'{DBPATH}netdevices.sqlite'):
+
+def getdevices(dbpath=f'{DBPATH}netdevices.sqlite') -> str:
+    """ return all devices present in datavase
+
+    :param dbpath: path to database
+    """
     try:
-        with sqlite3.connect(f'file:{dbpath}?mode=ro', timeout=10, check_same_thread=False, uri=True) as db:
+        with connect(f'file:{dbpath}?mode=ro', timeout=10, check_same_thread=False, uri=True) as db:
             cursor = db.cursor()
             return cursor.execute('SELECT mac, IP, vendor, active from devices;').fetchall()
-    except:
+    except OperationalError as e:
+        debug(f'unable to open Database at {dbpath}: {e}')
         return ''
 
-def getstateforIP(dbpath, ip):
+
+def getstateforIP(dbpath, ip) -> int:
+    """ return state for given IP (default 0)
+
+    :param dbpath: path to database
+    :param ip: ip to do state lookup for
+    """
     try:
-        with sqlite3.connect(f'file:{dbpath}?mode=ro', timeout=10, check_same_thread=False, uri=True) as db:
+        with connect(f'file:{dbpath}?mode=ro', timeout=10, check_same_thread=False, uri=True) as db:
             cursor = db.cursor()
-            return cursor.execute('SELECT active from settings WHERE ip = ?;', (ip, )).fetchone()
-    except:
-        return None
+            dbval = cursor.execute('SELECT active from settings WHERE ip = ?;', (ip, )).fetchone()
+            return int(dbval[0]) if dbval and len(dbval) > 0 else 0
+    except OperationalError as e:
+        debug(f'unable to open Database at {dbpath}: {e}')
+        return 0
 
 
-def changedbstate(dbpath=f'{DBPATH}settings.sqlite', state=-1, ip='', devicespath=f'{DBPATH}netdevices.sqlite'):
+def changedbstate(dbpath=f'{DBPATH}settings.sqlite', state=-1, ip='', devicespath=f'{DBPATH}netdevices.sqlite') -> int:
+    """ change current setting for spoofing enabled/disabled
+
+    :param dbpath: path to settings database
+    :param state: state to change to (1=enable, 0=disable, -1=toggle)
+    :param ip: ip of device to change state for
+    :param devicespath: path of devices database
+
+    change current spoof state to given state or toggle state.
+    update device and settings databases
+    """
     try:
         if state == -1:
-            currentstate = getstateforIP(dbpath=dbpath, ip=ip)
-            comparestate = int(currentstate[0]) if currentstate and len(currentstate) > 0 else 0
-            state = 0 if comparestate > 0 else 1
+            state = 0 if getstateforIP(dbpath=dbpath, ip=ip) > 0 else 1
 
-        with sqlite3.connect(dbpath) as db:
+        with connect(dbpath) as db:
             cursor = db.cursor()
             cursor.execute('CREATE TABLE IF NOT EXISTS settings(ip TEXT PRIMARY KEY, ACTIVE INTEGER DEFAULT 0);')
             cursor.execute('INSERT OR REPLACE INTO settings(ip, active) values(?, ?);', (ip, state))
 
-        with sqlite3.connect(devicespath) as db:
+        with connect(devicespath) as db:
             cursor = db.cursor()
             cursor.execute('UPDATE devices SET active = ? WHERE IP = ?', (state, ip))
-    except:
+    except OperationalError as e:
+        debug(f'unable to open Database at {dbpath}: {e}')
         state = 0
 
     return state
@@ -52,6 +79,7 @@ def changedbstate(dbpath=f'{DBPATH}settings.sqlite', state=-1, ip='', devicespat
 @app.route('/')
 @route('/')
 def index():
+    """ render index template """
     results = []
     for res in getdevices(dbpath=f'{DBPATH}netdevices.sqlite'):
         results.append({'IP': res[1], 'MAC': res[0], 'VENDOR': res[2], 'ENABLED': res[3]})
@@ -61,38 +89,54 @@ def index():
 @route('/static/<filename>')
 @app.route('/static/<filename>')
 def static_files(filename):
+    """ retrun static files in /static/"""
     return static_file(filename, root=f'{APPPATH}/static/')
 
 
 @route('/favicon.ico')
 @app.route('/favicon.ico')
 def favicon():
+    """ return favicon.ico for browsers located in /static/ """
     return static_file('favicon.ico', root=f'{APPPATH}/static/')
 
 
-@route('/enable/<ip>', method = ['GET'])
-@app.route('/enable/<ip>', method = ['GET'])
+@route('/enable/<ip>', method=['GET'])
+@app.route('/enable/<ip>', method=['GET'])
 def enable(ip):
+    """ enable spoofing for given IP Address
+
+    :param ip: IP Address to enable spoofing for
+    """
     changedbstate(dbpath=f'{DBPATH}settings.sqlite', state=1, ip=ip)
     return '<! -- ENABLED --> <html><head><meta HTTP-EQUIV="REFRESH" content="0; url=/"></head></html>'
 
 
-@route('/disable/<ip>', method = ['GET'])
-@app.route('/disable/<ip>', method = ['GET'])
+@route('/disable/<ip>', method=['GET'])
+@app.route('/disable/<ip>', method=['GET'])
 def disable(ip):
+    """ disable spoofing for given IP Address
+
+    :param ip: IP Address to disable spoofing for
+    """
     changedbstate(dbpath=f'{DBPATH}settings.sqlite', state=0, ip=ip)
     return '<! -- DISABLED --> <html><head><meta HTTP-EQUIV="REFRESH" content="0; url=/"></head></html>'
 
 
-@app.route('/changestate', method = ['POST'])
-@route('/changestate', method = ['POST'])
+@app.route('/changestate', method=['POST'])
+@route('/changestate', method=['POST'])
 def changestate():
+    """ change spoofing for given IP Address and state
+
+    post body must contain valid json with ip and state keys
+    ip is IPAddress for which change to change spoof state
+    state is state to change to (1=enable, 0=disable, -1=toggle)
+    """
     postdata = request.body.read()
     if len(postdata) < 0:
         return '{}'
 
-    STATES = {'enable' : 1, 'disable' : 0, 'toggle': -1}
-    jsondata = json.loads(postdata.decode('utf-8'))
+    STATES = {'enable': 1, 'disable': 0, 'toggle': -1}
+    jsondata = loads(postdata.decode('utf-8'))
     if 'ip' not in jsondata.keys() or 'state' not in jsondata.keys() or jsondata['state'] not in STATES:
         return '{}'
 
@@ -100,8 +144,22 @@ def changestate():
     jsondata['state'] = list(STATES.keys())[list(STATES.values()).index(currentstate)] + 'd'
 
     response.content_type = 'application/json'
-    return json.dumps(jsondata)
+    return dumps(jsondata)
+
+
+def main() -> None:
+    """ main method
+
+    parse given commandline arguments
+    start webserver
+    initialise logging
+    """
+    parser = ArgumentParser()
+    parser.add_argument('--debug', help='run in debug mode', action='store_true')
+    args = parser.parse_args()
+    basicConfig(stream=stdout, level=DEBUG if args.debug else INFO)
+    run(host='0.0.0.0', port=8080, debug=args.debug)
 
 
 if __name__ == "__main__":
-    run(host='0.0.0.0', port=8080, debug=True)
+    main()
