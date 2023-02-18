@@ -125,7 +125,7 @@ def changedbstate(dbpath=DBPATH, state=-1, ip='') -> int:
     return state
 
 
-def getipprofilemapping(dbpath=DBPATH) -> dict:
+def getipprofilemapping(dbpath=DBPATH, name='%') -> dict:
     """ get IP/VPNProfile mapping
 
     :param dbpath: path to settings database
@@ -136,7 +136,7 @@ def getipprofilemapping(dbpath=DBPATH) -> dict:
     try:
         with connect(dbpath) as db:
             cursor = db.cursor()
-            results = cursor.execute("""SELECT ip, name FROM ipconnectionmap;""").fetchall()
+            results = cursor.execute("""SELECT ip, name FROM ipconnectionmap WHERE name like ?;""", (name,)).fetchall()
             for row in results:
                 returndict[row[0]] = row[1]
     except OperationalError as e:
