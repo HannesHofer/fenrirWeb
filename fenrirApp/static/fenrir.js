@@ -181,7 +181,7 @@ function deleteConfigModal(event)
 	var data = JSON.parse(profilename);
 	document.getElementById('deletename').innerHTML = data['data'];
 	document.getElementById('deletetype').innerHTML = data['type'];
-	
+
 	var deletesubmit = document.getElementById('deletemodalconfirm');
 	var type = data['type'].slice(0, 'Mapping'.length)
 	if (type == 'Mapping') {
@@ -189,7 +189,6 @@ function deleteConfigModal(event)
 	} else {
 		deletesubmit.onclick = deleteVPNConfigConfirmed;
 	}
-	
 }
 
 function profiletablehasdefault()
