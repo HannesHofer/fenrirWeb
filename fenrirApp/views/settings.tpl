@@ -152,7 +152,7 @@
     {%- if needscreatepassword -%}
       {%- include "createpassword" -%}
     {%- endif -%}
-    <div id="alerttoast" class="toast m-3 border-0 start-50 translate-middle-x fixed-top fade text-white" role="alert" aria-live="assertive" aria-atomic="true">
+    <div id="alerttoast" class="toast m-3 border-0 start-50 translate-middle-x fixed-top fade text-white w-50" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
         <div id="alerttoasttext" class="toast-body col-11 text-center"><strong></strong></div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
