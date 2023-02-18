@@ -208,7 +208,7 @@ function configModal(event)
 	document.getElementById('vpnconfigsubmitspinner').hidden = true;
 	var jsondata = event.relatedTarget.getAttribute('data-id');
 	var data = JSON.parse(jsondata);
-	var name = data['data']
+	var name = data ? data['data'] : null;
 	var inputform = document.getElementById('vpnconfigform');
 	var defaultisset = profiletablehasdefault(inputform);
 	inputform.classList.remove("was-validated");
@@ -292,7 +292,6 @@ function refreshMapping()
 			newtable += `"}' href="#deleteModal" role="button">delete</a></td></tr>`
 			iplist.push(ip)
 		}
-		
 		ipselect = document.getElementById('ipselect')
 		for (i = 0; i < ipselect.length; i++) {
 			var currentoption = ipselect.options[i]
