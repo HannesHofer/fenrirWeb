@@ -1,0 +1,2 @@
+    recursive-include fenrirApp/views *
+    recursive-include fenrirApp/static *
