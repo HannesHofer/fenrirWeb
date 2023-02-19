@@ -39,7 +39,7 @@
                 {% endfor %}
                 <td class="col-2 modify">
                   <button class="btn btn-primary" data-bs-toggle="modal" data-id='{"type": "VPNProfile", "data": "{{config[vpncolumns[0]]}}"}'  href="#configurationDataModal" role="button" {% if not isauthenticated %} disabled {% endif %}>edit...</button>
-                  <button class="btn btn-primary mx-2" data-bs-toggle="modal" data-id='{"type": "VPNProfile", "data": "{{config[vpncolumns[0]]}}"}' href="#deleteModal" role="button" {% if not isauthenticated %} disabled {% endif %} >delete</a>
+                  <button class="btn btn-primary mx-xl-2" data-bs-toggle="modal" data-id='{"type": "VPNProfile", "data": "{{config[vpncolumns[0]]}}"}' href="#deleteModal" role="button" {% if not isauthenticated %} disabled {% endif %} >delete</a>
                 </td>
               </tr>
             {%- endfor -%}
@@ -80,7 +80,7 @@
                 <td class="col-4"></td>
                 <td class="col-2 modify">
                   <a class="btn btn-primary" data-bs-toggle="modal" data-id='{"type": "Mapping for", "data": "{{ip}}", "profile": "{{profile}}"}' href="#mappingModal" role="button">edit...</a>
-                  <a class="btn btn-primary mx-2" data-bs-toggle="modal" data-id='{"type": "Mapping for", "data": "{{ip}}", "profile": "{{profile}}"}' href="#deleteModal" role="button">delete</a>
+                  <a class="btn btn-primary mx-xl-2" data-bs-toggle="modal" data-id='{"type": "Mapping for", "data": "{{ip}}", "profile": "{{profile}}"}' href="#deleteModal" role="button">delete</a>
                 </td>
               </tr>
             {%- endfor -%}

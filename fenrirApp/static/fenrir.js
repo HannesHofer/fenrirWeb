@@ -288,7 +288,7 @@ function refreshMapping()
 			newtable += `<td class="col-4"></td><td class="cold-2 modify">
 				<a class="btn btn-primary" data-bs-toggle="modal" data-id='{"type": "Mapping for", "data": "`
 				+ ip + '", "profile": "' + name + `"}' href="#mappingModal" role="button">edit...</a>`
-			newtable += `<a class="btn btn-primary mx-2" data-bs-toggle="modal" data-id='{"type": "Mapping for", "data": "` + ip +'", "profile": "' + name
+			newtable += `<a class="btn btn-primary mx-xl-2" data-bs-toggle="modal" data-id='{"type": "Mapping for", "data": "` + ip +'", "profile": "' + name
 			newtable += `"}' href="#deleteModal" role="button">delete</a></td></tr>`
 			iplist.push(ip)
 		}
@@ -336,7 +336,7 @@ function refreshVPNSettingData()
 			}
 			newtable += `<td class="col-2 modify">
 				<a class="btn btn-primary" data-bs-toggle="modal" data-id='{"type": "VPNProfile", "data": "${currentprofilename}"}' href="#configurationDataModal" role="button">edit...</a>
-				<a class="btn btn-primary mx-2" data-bs-toggle="modal" data-id='{"type": "VPNProfile", "data": "${currentprofilename}"}' href="#deleteModal" role="button">delete</a>
+				<a class="btn btn-primary mx-xl-2" data-bs-toggle="modal" data-id='{"type": "VPNProfile", "data": "${currentprofilename}"}' href="#deleteModal" role="button">delete</a>
 		 	 	</td></tr>`
 		}
 		tablebody.innerHTML = newtable;
