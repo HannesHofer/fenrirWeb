@@ -77,8 +77,8 @@ def deleteconfig():
     profile = jsondata['profilename']
     if getipprofilemapping(name=profile):
         return dumps({'error': True,
-                      'text': f"""Cannot delete VPN Profile. {profile} is referenced in IP/VPNProfile mapping.</br>
-                                  remove all occurences of {profile} in IP/VPNProfile mapping first."""})
+                      'text': f"""VPNProfile '{profile}' is referenced in IP/VPNProfile mapping.</br>
+                                  remove all occurences of '{profile}' in IP/VPNProfile mapping first."""})
     ret = deletevpnconfig(profilename=profile)
     if ret:
         return dumps({'error': True, 'text': ret})
