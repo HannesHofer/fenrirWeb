@@ -88,6 +88,11 @@
         </table>
         <a class="btn btn-success offset-10 col-2 mt-4" data-bs-toggle="modal" href="#mappingModal" role="button">Add IP/VPNProfile map...</a>
       </div>
+
+      <div class="container mt-4 pt-4">
+        <div class="m-4 mx-0"><h4>Password management</h4></div>
+        <button class="btn btn-success row mt-4 offset-10" data-bs-toggle="modal" data-id='{"type": "change"}' href="#changepasswordmodal" role="button" {% if not isauthenticated %} disabled {% endif %} >Change Password...</button>
+      </div>
     </main>
 
     <div class="modal fade" id="configurationDataModal" aria-hidden="true" aria-labelledby="configurationDataModalLabel" tabindex="-1">
@@ -149,6 +154,7 @@
         </div>
       </div>
     </div>
+    {%- include "changepassword" -%}
     {%- if needscreatepassword -%}
       {%- include "createpassword" -%}
     {%- endif -%}

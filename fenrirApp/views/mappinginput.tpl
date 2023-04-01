@@ -9,8 +9,7 @@
                     <option disabled selected value=""> -- select an IP -- </option>
                 {% for row in devices %}
                     {%- set htype="" -%} {%- if row['IP'] in vpnmappinconfig -%}{%- set htype="hidden "-%} {%- endif -%}
-                    <option {{htype}}value="{{row['IP']}}">{{row['IP']}}</option>
-                    
+                    <option {{htype}}value="{{row['IP']}}">{{row['IP']}}</option>S
                 {% endfor %}
                 </select>
                 <div class="invalid-feedback">Please choose a IPAddress.</div>
