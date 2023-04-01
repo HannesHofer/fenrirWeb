@@ -33,10 +33,22 @@ async function handleIPmappingSubmit()
 async function handleCreatePasswordSubmit()
 {
 	var data = {'password': document.getElementById('vpnpassword').value,
-				'passwordrepeat': document.getElementById('repeatvpnpassword').value};
+				'passwordrepeat': document.getElementById('repeatvpnpassword').value,
+				'passwordusedforencryption': document.getElementById('chisencryptionpassword').checked ? "on" : "off"};
 
 	getData('/createpassword', data).then(resp => resp.text()).then(resp => {
 		handleResponseToast('createpasswordmodal', resp);
+	})
+}
+
+async function handleChangePasswordSubmit()
+{
+	var data = {'currentpassword': document.getElementById('chcurrentpassword').value,
+				'password': document.getElementById('chvpnpassword').value,
+				'passwordrepeat': document.getElementById('chrepeatvpnpassword').value,
+				'passwordusedforencryption': document.getElementById('chisencryptionpassword').checked ? "on" : "off"};
+	getData('/changepassword', data).then(resp => resp.text()).then(resp => {
+		handleResponseToast('changepasswordmodal', resp);
 	})
 }
 
@@ -74,10 +86,13 @@ function validatepassword()
 	return valid
 }
 
-function sumbitVPNPassword(){
+function sumbitVPNPassword(ischange=false){
 	//form = document.getElementById("vpnpasswordform");
 	if (validatepassword()) {
-		handleCreatePasswordSubmit();
+		if (ischange)
+			handleChangePasswordSubmit();
+		else
+			handleCreatePasswordSubmit();
 	}
 }
 
@@ -169,6 +184,8 @@ function handleResponseToast(modalname, resp)
 
 function changeState(id)
 {
+	if (id.length == 0)
+		return
 	getData('/changestate', {ip: id, state: 'toggle'}).then(resp => resp.json()).then(resp => {
 		var row = document.getElementById('img-' + resp['ip']);
 		row.src = 'static/' + resp['state'] + '.png'
@@ -362,6 +379,17 @@ function mappingModal(event)
 	}
 }
 
+function changePasswordModal(event)
+{
+	document.getElementById('chvpnpasswordform').classList.remove("was-validated")
+	document.getElementById('chcurrentpassword').value = ''
+	document.getElementById('chvpnpassword').value = ''
+	document.getElementById('chrepeatvpnpassword').value = ''
+	getData('/ispasswordusedforencryption', {}).then(resp => resp.json()).then(resp => {
+		document.getElementById('chisencryptionpassword').checked = resp['checked']
+	})
+}
+
 function modalData()
 {
 	var configurationDataModal = document.getElementById('configurationDataModal')
@@ -372,6 +400,9 @@ function modalData()
 
 	var deleteModal = document.getElementById('mappingModal')
 	deleteModal.addEventListener('show.bs.modal',  function(event){ mappingModal(event); })
+
+	var changePasswordModalobj = document.getElementById('changepasswordmodal')
+	changePasswordModalobj.addEventListener('show.bs.modal',  function(event){ changePasswordModal(event); })
 
 }
 
