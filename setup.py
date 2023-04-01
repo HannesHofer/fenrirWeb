@@ -4,6 +4,8 @@ setup(
     name='fenrirApp',
     version='0.1.0',
     long_description=__doc__,
+    authors=['Hannes Hofer <Hannes.Hofer@gmail.com>'],
+    description='use FenrirApp as WebInterface for fenrir in order to show and configure VPN route enforcement',
     packages=['fenrirApp'],
     include_package_data=True,
     zip_safe=False,
