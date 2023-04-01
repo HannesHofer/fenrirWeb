@@ -1,7 +1,9 @@
 from bottle import route, request, response, Bottle, jinja2_template, auth_basic
-from lib import storevpnsettings, getvpnconfig, deletevpnconfig, passwordtablepresent, \
-                getipprofilemapping, getdevices, addmappingcmd, deletemappingcmd, \
-                is_authenticated_user, createpasswordcmd
+from . lib import storevpnsettings, getvpnconfig, deletevpnconfig, is_passwordset, \
+                  getipprofilemapping, getdevices, addmappingcmd, deletemappingcmd, \
+                  is_authenticated_user, createpasswordcmd, setvpnpassword, \
+                  needspasswordcheck, set_needspasswordcheck, is_passworusedforencryption, \
+                  changepasswordcmd
 from json import loads, dumps
 
 
@@ -15,7 +17,7 @@ def is_authenticated_header(authheader):
     """
     if not authheader or len(authheader) < 2:
         return False
-    return is_authenticated_user(authheader[0], authheader[1])
+    return is_authenticated_user(username=authheader[0], password=authheader[1])
 
 
 @app.route('/storeconfig', method=['POST'])
@@ -39,8 +41,14 @@ def storeconfig(replace=False):
     id = None
     if replace:
         id = jsondata['vpnprofileid']
+
+    encpassword = None
+    if is_passworusedforencryption():
+        if not request.auth or len(request.auth) < 2:
+            return dumps({'error': False, 'text': 'encryption password not set'})
+        encpassword = request.auth[1]
     ret = storevpnsettings(vpnprofilename=jsondata['profilename'], vpnuser=jsondata['username'], vpnpass=jsondata['password'],
-                           vpnconfig=jsondata['vpnconfig'], description=jsondata['description'],
+                           vpnconfig=jsondata['vpnconfig'], description=jsondata['description'], passphrase=encpassword,
                            isdefault=jsondata['isdefault'], ondemand=jsondata['ondemand'], id=id)
     if ret and len(ret) > 0:
         return dumps({'error': True, 'text': 'unable to get store configuration: ' + ret})
@@ -50,6 +58,12 @@ def storeconfig(replace=False):
         action = 'modified'
     return dumps({'error': False, 'text': f'successfully {action} configuration'})
 
+
+@app.route('/ispasswordusedforencryption', method=['POST'])
+@auth_basic(is_authenticated_user)
+@route('/ispasswordusedforencryption', method=['POST'])
+def ispasswordusedforencryption():
+    return dumps({'error': False, 'checked': is_passworusedforencryption()})
 
 @app.route('/replaceconfig', method=['POST'])
 @auth_basic(is_authenticated_user)
@@ -122,6 +136,31 @@ def addmapping():
     return dumps({'error': False, 'text': 'successfully added mapping'})
 
 
+@app.route('/changepassword', method=['POST'])
+@route('/changepassword', method=['POST'])
+def changepassword():
+    """ change current VPNProfile protection password
+
+    return error or success messages when changing succeeds/fails
+    """
+    postdata = request.body.read()
+    jsondata = loads(postdata.decode('utf-8'))
+    response.content_type = 'text/json'
+
+    if jsondata['password'] != jsondata['passwordrepeat']:
+        return dumps({'error': True, 'text': 'passwords do not match'})
+
+    if not is_authenticated_user(username=None, password=jsondata['currentpassword']):
+        return dumps({'error': True, 'text': 'current password ist not correct'})
+
+    ret = changepasswordcmd(currentpassword=jsondata['currentpassword'], password=jsondata['password'],
+                            usedforencryption=jsondata['passwordusedforencryption'] == 'on')
+    if ret:
+        return dumps({'error': True, 'text': ret})
+
+    return dumps({'error': False, 'text': 'successfully changed password.'})
+
+
 @app.route('/createpassword', method=['POST'])
 @route('/createpassword', method=['POST'])
 def createpassword():
@@ -136,7 +175,7 @@ def createpassword():
     if jsondata['password'] != jsondata['passwordrepeat']:
         return dumps({'error': False, 'text': 'passwords do not match'})
 
-    ret = createpasswordcmd(password=jsondata['password'])
+    ret = createpasswordcmd(password=jsondata['password'], usedforencryption=jsondata['passwordusedforencryption'] == 'on')
     if ret:
         return dumps({'error': True, 'text': ret})
 
@@ -150,7 +189,7 @@ def passwordset():
 
     return wether or not VPN Profile password is set
     """
-    return dumps({'error': False, 'value': passwordtablepresent()})
+    return dumps({'error': False, 'value': is_passwordset()})
 
 
 @app.route('/getvpnconfigurations', method=['GET', 'POST'])
@@ -170,7 +209,11 @@ def getvpnconfigurations():
     else:
         profilename = request.args.get('profilename')
 
-    return dumps(getvpnconfig(profilename=profilename, getauth=getauth))
+    passphrase = None
+    if getauth and len(request.auth) > 1:
+        passphrase = request.auth[1]
+
+    return dumps(getvpnconfig(profilename=profilename, getauth=getauth, passphrase=passphrase))
 
 
 @app.route('/getmappings', method=['GET', 'POST'])
@@ -183,6 +226,9 @@ def getmappings():
 @app.route('/settingsauthenticated')
 @auth_basic(is_authenticated_user)
 def authtest():
+    if needspasswordcheck() and request.auth:
+        set_needspasswordcheck(not setvpnpassword(password=request.auth[1]))
+
     return config(isauthenticated=True)
 
 
@@ -195,6 +241,8 @@ def config(isauthenticated=False):
     devices = getdevices()
     if not isauthenticated:
         isauthenticated = is_authenticated_header(request.auth)
+        if needspasswordcheck() and request.auth:
+            set_needspasswordcheck(not setvpnpassword(password=request.auth[1]))
     return jinja2_template('settings', vpnconfigs=vpnconfigs,
                            vpnmappinconfig=ipmappings, devices=devices,
                            isauthenticated=isauthenticated, needscreatepassword=True)
