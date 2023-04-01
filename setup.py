@@ -7,6 +7,6 @@ setup(
     packages=['fenrirApp'],
     include_package_data=True,
     zip_safe=False,
-    install_requires=['Bottle', 'fenrir', 'jinja2', 'bcrypt'],
+    install_requires=['Bottle', 'jinja2', 'bcrypt', 'fenrir @ https://github.com/HannesHofer/fenrir/releases/download/0.3.0/fenrir-0.3.0-py3-none-any.whl'],
     entry_points={'console_scripts': ['fenrirApp = fenrirApp.main:main', ]},
 )
