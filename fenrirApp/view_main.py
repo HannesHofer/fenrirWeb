@@ -1,5 +1,7 @@
-from bottle import static_file, jinja2_template, request, response, Bottle
-from lib import DBPATH, getdevices, changedbstate, APPPATH, isvpnconfigset
+from bottle import static_file, jinja2_template, request, response, Bottle, auth_basic
+from . lib import DBPATH, getdevices, changedbstate, APPPATH, isvpnconfigset, \
+                  checkvpnpassword, needspasswordcheck, set_needspasswordcheck, \
+                  is_authenticated_user, setvpnpassword
 from json import dumps, loads
 
 
@@ -22,7 +24,24 @@ def favicon():
 @app.route('/')
 def index():
     """ render index template """
-    return jinja2_template('index', results=getdevices(), hasprofiles=isvpnconfigset())
+    hasprofile = isvpnconfigset()
+    if needspasswordcheck():
+        needspw = not checkvpnpassword()
+        if needspw:
+            if request.auth:
+                set_needspasswordcheck(setvpnpassword(password=request.auth[1]))
+        else:
+            set_needspasswordcheck(False)
+    return jinja2_template('index', results=getdevices(), hasprofiles=hasprofile, needspassword=needspasswordcheck())
+
+
+@app.route('/authenticated')
+@auth_basic(is_authenticated_user)
+def authtest():
+    if needspasswordcheck() and request.auth:
+        set_needspasswordcheck(not setvpnpassword(password=request.auth[1]))
+
+    return index()
 
 
 @app.route('/enable/<ip>', method=['GET'])
@@ -31,6 +50,8 @@ def enable(ip):
 
     :param ip: IP Address to enable spoofing for
     """
+    if needspasswordcheck():
+        set_needspasswordcheck(not checkvpnpassword())
     changedbstate(dbpath=DBPATH, state=1, ip=ip)
     return '<! -- ENABLED --> <html><head><meta HTTP-EQUIV="REFRESH" content="0; url=/"></head></html>'
 
@@ -59,8 +80,12 @@ def changestate():
 
     STATES = {'enable': 1, 'disable': 0, 'toggle': -1}
     jsondata = loads(postdata.decode('utf-8'))
-    if 'ip' not in jsondata.keys() or 'state' not in jsondata.keys() or jsondata['state'] not in STATES:
+    if 'ip' not in jsondata.keys() or len(jsondata['ip']) == 0 or \
+       'state' not in jsondata.keys() or jsondata['state'] not in STATES:
         return '{}'
+
+    if needspasswordcheck():
+        set_needspasswordcheck(not checkvpnpassword())
 
     currentstate = changedbstate(dbpath=DBPATH, state=STATES[jsondata['state']], ip=jsondata['ip'])
     jsondata['state'] = list(STATES.keys())[list(STATES.values()).index(currentstate)] + 'd'
