@@ -1,18 +1,33 @@
 from bottle import TEMPLATE_PATH
 from sqlite3 import connect, OperationalError
-from os.path import dirname, realpath
+from os.path import dirname, realpath, exists
 from logging import debug
 from bcrypt import gensalt, hashpw
 from fenrir.filehandler import filehandler
 from fenrir.fenrir import Fenrir
+from json import loads, dumps
+from os import O_RDWR, O_NONBLOCK, fdopen, open as osopen
+from select import select
+from time import sleep
 
 APPPATH = dirname(realpath(__file__))
 TEMPLATE_PATH[:] = [f'{APPPATH}/views']
 DBPATH = '/var/cache/fenrir/fenrir.sqlite'
+NEEDSPASSWORDCHECK = False
+
+
+def set_needspasswordcheck(value) -> None:
+    global NEEDSPASSWORDCHECK
+    NEEDSPASSWORDCHECK = value
+
+
+def needspasswordcheck() -> bool:
+    global NEEDSPASSWORDCHECK
+    return NEEDSPASSWORDCHECK
 
 
 def getdevices(dbpath=DBPATH) -> list:
-    """ return all devices present in datavase
+    """ return all devices present in database
 
     :param dbpath: path to database
     returns list of row mapping or empty list for no result
@@ -164,6 +179,45 @@ def isvpnconfigset(dbpath=DBPATH) -> bool:
     return False
 
 
+def sendpipecommand(command={}, pipepath='/var/cache/fenrir/fenrirvpn.pipe') -> dict:
+    if not exists(pipepath):
+        return {'error', 'no pipe available'}
+
+    wfd = osopen(pipepath, O_RDWR | O_NONBLOCK)
+    with fdopen(wfd, 'w') as writepipe:
+        writepipe.write(dumps(command))
+        writepipe.flush()
+
+    sleep(0.1)
+    fd = osopen(pipepath, O_RDWR | O_NONBLOCK)
+    response = ''
+    with fdopen(fd, 'r') as pipe:
+        rlist, _, _ = select([pipe], [], [], 0.1)
+        if rlist:
+            response = pipe.read()
+    return response
+
+
+def checkvpnpassword() -> bool:
+    resp = sendpipecommand(command={'command': 'ispasswordset', 'value': ''})
+    if not resp:
+        return False
+    data = loads(resp)
+    if 'error' in data and not data['error']:
+        return data['response']
+
+    return False
+
+
+def setvpnpassword(password='') -> bool:
+    resp = sendpipecommand(command={'command': 'setpassword', 'value': password})
+    if not resp:
+        return False
+    data = loads(resp)
+    debug(f'got answer form storing password: {data}')
+    return checkvpnpassword()
+
+
 def getvpnconfig(profilename=None, getauth=False, dbpath=DBPATH, passphrase=None) -> dict:
     """ get vpn config from database
 
@@ -288,40 +342,66 @@ def deletemappingcmd(ip=None, dbpath=DBPATH) -> str:
     return ''
 
 
-def passwordtablepresent(dbpath=DBPATH) -> bool:
-    """ check wether or not VPN Profile password protection table is present
+def is_passwordset(dbpath=DBPATH) -> bool:
+    """ check wether or not VPN Profile password is present
 
     :param dbpath: path to settings database
     """
     try:
         with connect(dbpath) as db:
             cursor = db.cursor()
-            ret = cursor.execute('SELECT name FROM sqlite_master WHERE type="table" AND name="profilepassword";').fetchone()
+            ret = cursor.execute('SELECT hash FROM profilepassword LIMIT 1;').fetchone()
             return ret != None
     except Exception:
         return False
 
 
-def createpasswordcmd(password, dbpath=DBPATH) -> str:
-    """ create password for VPN password protection
+def createpasswordcmd(password, usedforencryption, dbpath=DBPATH) -> str:
+    """ create password for VPNProfile password protection
 
     :param password: password to be used for VPNProfile protection
+    :param usedforencryption: use given password to encrypt VPNProfiles
     :param dbpath: path to settings database
     """
 
     try:
         with connect(dbpath) as db:
             cursor = db.cursor()
-            if (passwordtablepresent(dbpath=dbpath)):
+            if (is_passwordset(dbpath=dbpath)):
                 return 'Password already set.'
             salt = gensalt()
             hpassword = hashpw(password.encode('utf-8'), salt)
-            cursor.execute('CREATE TABLE profilepassword(salt STRING NOT NULL, hash STRING NOT NULL);')
-            cursor.execute('INSERT INTO profilepassword(salt, hash) values(?,?);', (salt, hpassword))
+            cursor.execute('INSERT INTO profilepassword(salt, hash, usedforencryption) values(?,?,?);', (salt, hpassword, usedforencryption))
     except Exception as e:
         return str(e)
 
     return ''
+
+
+def changepasswordcmd(password, usedforencryption, currentpassword=None, dbpath=DBPATH) -> str:
+    """ change password for VPNProfile password protection
+
+    :param password: new password
+    :param usedforencryption: is the new password used for encryption
+    :param currentpassword: current password used to decrypt VPNProfiles
+    :param dbpath: path to settings database
+    """
+    old_usedforencryption = is_passworusedforencryption()
+    passphrase = password if usedforencryption else None
+    oldpassphrase = currentpassword if old_usedforencryption else None
+
+    if old_usedforencryption or usedforencryption:
+        profiles = getvpnconfig(profilename=None, getauth=True, passphrase=oldpassphrase)
+        for profile, data in profiles.items():
+            storevpnsettings(vpnprofilename=data['profilename'], description=data['description'], isdefault=data['isdefault'],
+                             ondemand=data['ondemand'], vpnuser=data['username'], vpnpass=data['password'],
+                             vpnconfig=data['vpnconfig'], id=data['vpnprofileid'], passphrase=passphrase)
+
+    with connect(dbpath) as db:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM profilepassword;")
+
+    return createpasswordcmd(password=password, usedforencryption=usedforencryption)
 
 
 def addmappingcmd(ip=None, name=None, dbpath=DBPATH) -> str:
@@ -346,7 +426,7 @@ def addmappingcmd(ip=None, name=None, dbpath=DBPATH) -> str:
     return ''
 
 
-def is_authenticated_user(username=None, password=None, dbpath=DBPATH):
+def is_authenticated_user(username=None, password=None, dbpath=DBPATH) -> bool:
     """ check if password is correct
 
     :param username: just for completeness. Currently not used.
@@ -363,6 +443,25 @@ def is_authenticated_user(username=None, password=None, dbpath=DBPATH):
                 hpassword = hashpw(password.encode('utf-8'), ret[0])
                 if hpassword == ret[1]:
                     return True
+    except Exception as e:
+        debug(f'uable to query auth state {dbpath}: {e}')
+
+    return False
+
+
+def is_passworusedforencryption(dbpath=DBPATH) -> bool:
+    """ check if password is for encrypting VPNProfiles
+
+    :param dbpath: path to settings database
+
+    return true if password is used to encrypt VPNProfiles
+    """
+    try:
+        with connect(dbpath) as db:
+            cursor = db.cursor()
+            ret = cursor.execute('SELECT usedforencryption hash FROM profilepassword LIMIT 1;').fetchone()
+            if ret and ret[0]:
+                return True
     except Exception as e:
         debug(f'uable to query auth state {dbpath}: {e}')
 
