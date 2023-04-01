@@ -4,8 +4,8 @@
 ## Introduction
 Fenrir provides a user friendly way to route all traffic from configured trough a VPN tunnel.
 
-This is done via ARP Spoofing. Determined default GW on `inputinterface` is spoofed to configured device.
-Configuration is stored in `/var/cache/fenrir/settings.db`
+FenrirApp is a webinterface for viewing/ configuring fenrir.
+Configuration is stored in `/var/cache/fenrir/fenrir.db`
 
 ## Installation
 Fenrir is a pure python3 application. (3.6+)
