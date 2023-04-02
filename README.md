@@ -4,7 +4,7 @@
 ## Introduction
 Fenrir provides a user friendly way to route all traffic from configured trough a VPN tunnel.
 
-FenrirApp is a webinterface for viewing/ configuring fenrir.
+FenrirWeb is a webinterface for viewing/ configuring fenrir.
 Configuration is stored in `/var/cache/fenrir/fenrir.db`
 
 ## Installation
@@ -12,8 +12,8 @@ Fenrir is a pure python3 application. (3.6+)
 
 ### pip releases
 ```sh
-> pip install fenrirapp
-> fenrirapp --help
+> pip install fenrirweb
+> fenrirweb --help
 ```
 # Usage
 Usage is documented in integrated help module.
@@ -23,5 +23,5 @@ Usage is documented in integrated help module.
 ## examples
 ### run fenrir web in debug mode
 ```sh
-fenrirapp --debug
+fenrirweb --debug
 ```
