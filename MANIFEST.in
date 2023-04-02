@@ -1,2 +1,2 @@
-    recursive-include fenrirApp/views *
-    recursive-include fenrirApp/static *
+    recursive-include fenrirWeb/views *
+    recursive-include fenrirWeb/static *

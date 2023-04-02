@@ -1,5 +1,5 @@
 #!/bin/env python3
 
-from fenrirApp.main import app
-from fenrirApp import static
-from fenrirApp import views
+from fenrirWeb.main import app
+from fenrirWeb import static
+from fenrirWeb import views
