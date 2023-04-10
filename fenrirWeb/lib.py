@@ -9,6 +9,7 @@ from json import loads, dumps
 from os import O_RDWR, O_NONBLOCK, fdopen, open as osopen
 from select import select
 from time import sleep
+from cryptography.fernet import InvalidToken
 
 APPPATH = dirname(realpath(__file__))
 TEMPLATE_PATH[:] = [f'{APPPATH}/views']
@@ -245,11 +246,15 @@ def getvpnconfig(profilename=None, getauth=False, dbpath=DBPATH, passphrase=None
                 valuedict['isdefault'] = result[2]
                 valuedict['ondemand'] = result[3]
                 if getauth:
-                    fh = filehandler(passphrase=passphrase)
-                    valuedict['username'] = fh.decode(result[4].decode('utf-8')).decode('utf-8')
-                    valuedict['password'] = fh.decode(result[5].decode('utf-8')).decode('utf-8')
-                    valuedict['vpnconfig'] = fh.decode(result[6].decode('utf-8')).decode('utf-8')
-                    valuedict['vpnprofileid'] = result[7]
+                    try:
+                        fh = filehandler(passphrase=passphrase)
+                        valuedict['username'] = fh.decode(result[4].decode('utf-8')).decode('utf-8')
+                        valuedict['password'] = fh.decode(result[5].decode('utf-8')).decode('utf-8')
+                        valuedict['vpnconfig'] = fh.decode(result[6].decode('utf-8')).decode('utf-8')
+                        valuedict['vpnprofileid'] = result[7]
+                    except InvalidToken:
+                        if passphrase:
+                            return getvpnconfig(profilename=profilename, getauth=getauth, dbpath=dbpath, passphrase=None)
                 returndict[f'profile{i}'] = valuedict.copy()
     except OperationalError as e:
         debug(f'unable to query Database {dbpath}: {e}')
