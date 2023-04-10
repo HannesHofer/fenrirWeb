@@ -7,6 +7,9 @@ Fenrir provides a user friendly way to route all traffic from configured trough 
 FenrirWeb is a webinterface for viewing/ configuring fenrir.
 Configuration is stored in `/var/cache/fenrir/fenrir.db`
 
+## Screenshots
+![Slideshow](https://hanneshofer.github.io/fenrirWeb/images/screens.gif)
+
 ## Installation
 Fenrir is a pure python3 application. (3.6+)
 
