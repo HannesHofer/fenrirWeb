@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Fenrir : Route traffic through configured VPN tunnel">
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <title>Fenrir</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner" style="height: 120px;">
+          <a id="forkme_banner" href="https://github.com/HannesHofer/FenrirWeb">View on GitHub</a>
+          <div id="fenririmg" style="width: 100px; float:left; margin: 10px; ">
+          <img src="images/fenrir.ico" width="64" height="64" style="filter: invert(100%);border:none; outline: none;" alt="Fenrir Home">
+          </div>
+          <div id="fenrirtext" style="width: 900px; float:left;">
+            <h1 id="project_title">Fenrir</h1>
+            <h2 id="project_tagline">Route local traffic through configured VPN tunnel</h2>
+          </div>
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/HannesHofer/FenrirWeb/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/HannesHofer/FenrirWeb/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1><a name="welcome-to-fenrir" class="anchor" href="#welcome-to-fenrir" style="margin-top: 10px;"><span class="octicon octicon-link"></span></a>Welcome to Fenrir</h1>
+          <p>Fenrir provides a user friendly way to route all traffic from configured trough a VPN tunnel.
+            This is done via ARP Spoofing. Determined default GW on inputinterface is spoofed to configured device. Configuration is stored in /var/cache/fenrir/fenrir.db.</p>
+        <div class="slideshow" style="height: 400px;">
+          <img src="images/screen1.png">
+          <img src="images/screen2.png">
+          <img src="images/screen3.png">
+          <img src="images/screen4.png">
+        </div>
+        <div style="margin-top: 40px;">
+          <h2><a name="VPN-config" class="anchor" href="#VPN-config"><span class="octicon octicon-link"></span></a>VPN Configuration</h2>
+          <p>Configure various VPN tunnel in a user friendly overview.
+          Set default connection tunnel or tunnel per device.</p>
+
+          <h2><a name="dynamic-setting" class="anchor" href="#dynamic-setting"><span class="octicon octicon-link"></span></a>Dynamically adjustable routing</h2>
+          <p>Dynamically set routing via VPN Tunnel. Configure Tunnel establishment (on-demand) or always connected. Enabled VPN routing with simple click.
+            All devices in the same network range show up and can be routed trough VPN via simple click.</p>
+        </div>
+      </section>
+    </div>
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Fenrir maintained by <a href="https://github.com/HannesHofer">HannesHofer</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
