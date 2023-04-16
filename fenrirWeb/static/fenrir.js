@@ -32,6 +32,9 @@ async function handleIPmappingSubmit()
 
 async function handleCreatePasswordSubmit()
 {
+	document.getElementById('createpasswordsubmit').disabled = true;
+	document.getElementById('createpasswordsubmitspinner').hidden = false;
+
 	var data = {'password': document.getElementById('vpnpassword').value,
 				'passwordrepeat': document.getElementById('repeatvpnpassword').value,
 				'passwordusedforencryption': document.getElementById('chisencryptionpassword').checked ? "on" : "off"};
@@ -43,6 +46,9 @@ async function handleCreatePasswordSubmit()
 
 async function handleChangePasswordSubmit()
 {
+	document.getElementById('changepasswordsubmit').disabled = true;
+	document.getElementById('changepasswordsubmitspinner').hidden = false;
+
 	var data = {'currentpassword': document.getElementById('chcurrentpassword').value,
 				'password': document.getElementById('chvpnpassword').value,
 				'passwordrepeat': document.getElementById('chrepeatvpnpassword').value,
@@ -104,7 +110,7 @@ async function handleVPNConfigSubmit()
 
 	var inputform = document.getElementById('vpnconfigform');
 	var inputs = inputform.getElementsByTagName('input');
-	
+
 	var data = {};
 	var cmd = '/storeconfig';
 	for (i = 0; i < inputs.length; i++) {
@@ -129,7 +135,6 @@ function sumbitVPNConfig(){
 	form = document.getElementById("vpnconfigform")
 	if (checkformvalidity(form)) {
 		handleVPNConfigSubmit();
-		//form.dispatchEvent(new CustomEvent('submit', {cancelable: true}));
 	}
 }
 
@@ -137,7 +142,6 @@ function sumbitMappingConfig(){
 	form = document.getElementById("mappingform")
 	if (checkformvalidity(form)) {
 		handleIPmappingSubmit();
-		//form.dispatchEvent(new CustomEvent('submit', {cancelable: true}));
 	}
 }
 
@@ -229,6 +233,14 @@ function configModal(event)
 	var inputform = document.getElementById('vpnconfigform');
 	var defaultisset = profiletablehasdefault(inputform);
 	inputform.classList.remove("was-validated");
+
+	document.getElementById('vpnconfigform').addEventListener('keydown', function(event) {
+		if (event.key == "Enter" && event.target.type !== "textarea") {
+			event.preventDefault();
+			sumbitVPNConfig();
+		}
+	});
+
 	// adding new configuration
 	if (!name) {
 		var inputs = inputform.getElementsByTagName('input');
@@ -376,18 +388,55 @@ function mappingModal(event)
 		ipselect.value = data['data']
 		nameselect.value = data['profile']
 		ipselect.disabled = true
+	} else {
+		var tbody = document.getElementById('vpnsettingstablebody');
+		var rows = tbody.getElementsByTagName('tr');
+		for (var i = nameselect.options.length - 1; i > 0; i--) {
+			nameselect.removeChild(nameselect.options[i]);
+		}
+		for (var i = 0; i < rows.length; i++) {
+			var firstCell = rows[i].querySelector('td:first-child');
+			var value = firstCell.innerText;
+			var option = document.createElement('option');
+			option.value = value;
+			option.text = value;
+			nameselect.appendChild(option);
+		}
 	}
 }
 
 function changePasswordModal(event)
 {
-	document.getElementById('chvpnpasswordform').classList.remove("was-validated")
-	document.getElementById('chcurrentpassword').value = ''
-	document.getElementById('chvpnpassword').value = ''
-	document.getElementById('chrepeatvpnpassword').value = ''
+	document.getElementById('chvpnpasswordform').classList.remove("was-validated");
+	document.getElementById('chvpnpassword').value = '';
+	document.getElementById('chcurrentpassword').value = '';
+	document.getElementById('chrepeatvpnpassword').value = '';
 	getData('/ispasswordusedforencryption', {}).then(resp => resp.json()).then(resp => {
 		document.getElementById('chisencryptionpassword').checked = resp['checked']
 	})
+	document.getElementById('chvpnpasswordform').addEventListener('keydown', function(event) {
+		if (event.key == "Enter") {
+			event.preventDefault();
+			sumbitVPNPassword(true);
+		}
+	});
+}
+
+function createPasswordModal(event)
+{
+	document.getElementById('vpnpasswordform').addEventListener('keydown', function(event) {
+		if (event.key == "Enter") {
+			event.preventDefault();
+			sumbitVPNPassword(false);
+		}
+	});
+}
+
+function setfocus(focusobject)
+{
+	focusobject.focus();
+	focusobject.select();
+
 }
 
 function modalData()
@@ -404,6 +453,12 @@ function modalData()
 	var changePasswordModalobj = document.getElementById('changepasswordmodal')
 	changePasswordModalobj.addEventListener('show.bs.modal',  function(event){ changePasswordModal(event); })
 
+	var createPasswordModalobj = document.getElementById('createpasswordmodal')
+	createPasswordModalobj.addEventListener('show.bs.modal',  function(event){ createPasswordModal(event); })
+
+	createPasswordModalobj.addEventListener('shown.bs.modal', function(event){ setfocus(document.getElementById('vpnpassword')); })
+	changePasswordModalobj.addEventListener('shown.bs.modal', function(event){ setfocus(document.getElementById('chcurrentpassword')); })
+	configurationDataModal.addEventListener('shown.bs.modal', function(event){ setfocus(document.getElementById('profilename')); })
 }
 
 function checkformvalidity(from)
@@ -412,3 +467,4 @@ function checkformvalidity(from)
 	form.classList.add('was-validated')
 	return result
 }
+
