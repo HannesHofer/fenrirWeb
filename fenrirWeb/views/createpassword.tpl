@@ -35,7 +35,10 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-success" onclick="sumbitVPNPassword();">Sumbit</button>
+        <button type="button" class="btn btn-success" id="createpasswordsubmit" onclick="sumbitVPNPassword();">
+          <span class="spinner-border spinner-border-sm mr-2" id="createpasswordsubmitspinner" hidden role="status" aria-hidden="true"></span>
+          Sumbit
+        </button>
       </div>
     </div>
   </div>
