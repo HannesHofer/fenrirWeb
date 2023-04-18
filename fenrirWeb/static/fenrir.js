@@ -269,6 +269,7 @@ function configModal(event)
 		return;
 	}
 
+	disableVPNInput();
 	// modifying existing configuration
 	data = {profilename: name, completeData: true}
 	getData('/getvpnconfigurations', data).then(resp => resp.json()).then(resp => {
@@ -294,6 +295,7 @@ function configModal(event)
 			input.setAttribute('id', 'vpnconfigismodification');
 			document.getElementById("vpnconfigform").appendChild(input);
 		}
+		enableVPNInput();
 	})
 }
 
@@ -402,6 +404,28 @@ function mappingModal(event)
 			option.text = value;
 			nameselect.appendChild(option);
 		}
+	}
+}
+
+function disableVPNInput()
+{
+	var configForm = document.getElementById("vpnconfigform");
+	document.getElementById("loading").removeAttribute("hidden");
+	document.getElementById("vpnconfigsubmit").disabled = true;
+	var inputElements = configForm.querySelectorAll("input, textarea");
+	for (var i = 0; i < inputElements.length; i++) {
+		inputElements[i].disabled = true;
+	}
+}
+
+function enableVPNInput()
+{
+	var configForm = document.getElementById("vpnconfigform");
+	document.getElementById("loading").setAttribute("hidden", true);
+	document.getElementById("vpnconfigsubmit").disabled = false;
+	var inputElements = configForm.querySelectorAll("input, textarea");
+	for (var i = 0; i < inputElements.length; i++) {
+		inputElements[i].disabled = false;
 	}
 }
 
