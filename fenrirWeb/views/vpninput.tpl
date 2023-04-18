@@ -1,5 +1,12 @@
 <div class="container">
     <form class="needs-validation" id="vpnconfigform" onsubmit="handleVPNConfigSubmit();" novalidate>
+        <div class="overlay" id="loading" hidden>
+            <div class="d-flex justify-content-center">
+              <div class="spinner-border" role="status" >
+                <span class="sr-only"></span>
+              </div>
+            </div>
+          </div>
         <div class="row">
             <div class="col-12 mb-3 form-floating has-validation">
                 <input type="text" class="form-control" id="profilename" placeholder="Profile Name" required>
